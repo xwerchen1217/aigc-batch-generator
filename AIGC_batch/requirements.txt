@@ -1,0 +1,9 @@
+# Flask Web框架
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Excel文件处理
+openpyxl>=3.1.2
+
+# HTTP请求
+requests>=2.31.0

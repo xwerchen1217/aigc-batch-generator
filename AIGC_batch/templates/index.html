@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式话题召回Key生成工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔑 交互式话题召回Key生成工具</h1>
+            <p class="subtitle">根据Prompt模板批量生成电商商品召回关键词</p>
+        </header>
+
+        <main>
+            <!-- 步骤1: API配置 -->
+            <section class="step" id="step-api">
+                <div class="step-header">
+                    <span class="step-number">1</span>
+                    <h2>API配置</h2>
+                </div>
+                <div class="step-content">
+                    <div class="form-group">
+                        <label>API URL</label>
+                        <input type="text" id="api-url" placeholder="如: https://open.bigmodel.cn/api/paas/v4/">
+                    </div>
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="password" id="api-key" placeholder="输入API Key（仅存内存，不持久化）">
+                    </div>
+                    <div class="form-group">
+                        <label>模型名称</label>
+                        <input type="text" id="api-model" placeholder="如: glm-4.7">
+                    </div>
+                    <div class="form-actions">
+                        <button id="btn-save-api" class="btn btn-primary">保存配置</button>
+                    </div>
+                    <div id="api-status" class="status-message"></div>
+                </div>
+            </section>
+
+            <!-- 步骤2: Prompt配置 -->
+            <section class="step" id="step-prompt">
+                <div class="step-header">
+                    <span class="step-number">2</span>
+                    <h2>Prompt配置</h2>
+                    <button id="btn-load-default-prompt" class="btn btn-small">加载默认模板</button>
+                </div>
+                <div class="step-content">
+                    <div class="form-group">
+                        <label>Prompt模板（支持 {{变量名}} 语法）</label>
+                        <textarea id="prompt-template" rows="12" placeholder="输入Prompt模板..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>变量映射</label>
+                        <div id="variable-mapping" class="variable-list">
+                            <!-- 动态生成 -->
+                        </div>
+                        <button id="btn-add-variable" class="btn btn-small">+ 添加变量</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 步骤3: 文件上传 -->
+            <section class="step" id="step-upload">
+                <div class="step-header">
+                    <span class="step-number">3</span>
+                    <h2>文件上传</h2>
+                </div>
+                <div class="step-content">
+                    <div class="upload-zone" id="upload-zone">
+                        <div class="upload-icon">📁</div>
+                        <p>拖拽.xlsx文件到此处，或点击选择文件</p>
+                        <input type="file" id="file-input" accept=".xlsx" hidden>
+                    </div>
+                    <div id="file-info" class="file-info" style="display: none;">
+                        <h3>文件信息</h3>
+                        <div class="data-table-container">
+                            <table id="data-preview" class="data-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 步骤4: 预览确认 -->
+            <section class="step" id="step-preview">
+                <div class="step-header">
+                    <span class="step-number">4</span>
+                    <h2>预览确认</h2>
+                </div>
+                <div class="step-content">
+                    <div class="form-actions">
+                        <button id="btn-preview" class="btn btn-primary" disabled>预览前3个</button>
+                    </div>
+                    <div id="preview-results" class="preview-results" style="display: none;">
+                        <h3>预览结果</h3>
+                        <div id="preview-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 步骤5: 批量生成 -->
+            <section class="step" id="step-generate">
+                <div class="step-header">
+                    <span class="step-number">5</span>
+                    <h2>批量生成</h2>
+                </div>
+                <div class="step-content">
+                    <div class="form-group">
+                        <label>并发数设置</label>
+                        <input type="number" id="max-workers" placeholder="设置并发数（默认5，建议不超过10）" min="1" max="20" value="5">
+                        <small>适当增加并发数可提升处理速度，但过高可能导致API请求失败</small>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btn-start-generate" class="btn btn-primary" disabled>开始生成</button>
+                        <button id="btn-pause-generate" class="btn btn-secondary" style="display: none;">暂停</button>
+                    </div>
+                    <div id="progress-container" class="progress-container" style="display: none;">
+                        <div class="progress-bar-bg">
+                            <div id="progress-bar" class="progress-bar"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span id="progress-text">0 / 0</span>
+                            <span id="progress-percent">0%</span>
+                        </div>
+                        <div class="progress-detail">
+                            <span class="success-count">✓ 成功: <span id="success-count">0</span></span>
+                            <span class="error-count">✗ 失败: <span id="error-count">0</span></span>
+                        </div>
+                        <div id="progress-log" class="progress-log"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 步骤6: 结果下载 -->
+            <section class="step" id="step-download">
+                <div class="step-header">
+                    <span class="step-number">6</span>
+                    <h2>结果下载</h2>
+                </div>
+                <div class="step-content">
+                    <div class="form-actions">
+                        <button id="btn-export" class="btn btn-primary" disabled>导出结果</button>
+                        <button id="btn-download" class="btn btn-success" style="display: none;">下载文件</button>
+                        <button id="btn-reset" class="btn btn-secondary">重置</button>
+                    </div>
+                    <div id="checkpoint-info" class="checkpoint-info" style="display: none;">
+                        <p>检测到未完成的任务，<button id="btn-resume" class="btn-link">继续生成</button></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>🔒 API Key仅存内存，不持久化 | 自动每20行保存断点</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

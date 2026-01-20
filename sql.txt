@@ -1,0 +1,133 @@
+跑数周期：一周一次，获取一周内的成交订单大于10的商品。
+并且要求
+
+1、品类范围内；  商品价格：平均成交金额（成交金额/成交商品数）&有动销商品: 近7天累计成交订单大于10
+参考逻辑【SELECT
+    t.item_sku_id,
+    t.sku_name,
+    t.data_type,
+    t.shop_id,
+    t.item_first_cate_cd,
+    t.item_first_cate_name,
+    t.item_second_cate_cd,
+    t.item_second_cate_name,
+    t.item_third_cate_cd,
+    t.item_third_cate_name,
+    t.brand_code,
+    t.brandname_full,
+    pic.square_pic_path,
+    labels.brand_level,
+    labels.good_comment_rate,
+    t.total_amount,
+    t.total_sale_qtty,
+    t.avg_price
+FROM (
+    SELECT
+        item_sku_id,
+        sku_name,
+        data_type,
+        shop_id,
+        item_first_cate_cd,
+        item_first_cate_name,
+        item_second_cate_cd,
+        item_second_cate_name,
+        item_third_cate_cd,
+        item_third_cate_name,
+        brand_code,
+        brandname_full,
+        SUM(after_prefr_amount_1) AS total_amount,
+        SUM(sale_qtty) AS total_sale_qtty,
+        SUM(after_prefr_amount_1) / NULLIF(SUM(sale_qtty), 0) AS avg_price
+    FROM app.v_app_jdr_adm_d04_trade_std_ord_det_snapshot_pbase_i_d_d
+    WHERE dt BETWEEN sysdate(-7) AND sysdate(-1)
+      AND intraday_ord_deal_flag = 1
+      AND item_first_cate_cd IN (
+            5025,6144,1318,12473,37462,6233,36574,36720,12218,34884,11729,
+            17329,1315,1672,6728,1319,1316,16750,652,9987,670,12259,27546,
+            27983,9192,35025,737,1620,6196,34675,34767,35338,37893
+        )
+      AND item_second_cate_cd NOT IN (
+            14374,13968,13963,37430,37903,37895,37899,37896,37902,37898,
+            37901,37894,21076,35449,16943,703,699,807,38100,13529,38090,
+            31391,16755,16752,16754,27500,13297,794,16962,17394,14857,
+            34942,17467,4979,12566,42635,41717,17438,12565,38881,38877,
+            12479,42645,42675,42653,17418,12558,6747,6743,34327,12402,
+            6742,2599,31636,18523,12854,6880,10973,37565,4902,9196,9193,
+            34140,27985,27992,15763,15293,1466,29154,17122,34094
+        )
+    GROUP BY
+        item_sku_id,
+        sku_name,
+        data_type,
+        shop_id,
+        item_first_cate_cd,
+        item_first_cate_name,
+        item_second_cate_cd,
+        item_second_cate_name,
+        item_third_cate_cd,
+        item_third_cate_name,
+        brand_code,
+        brandname_full
+    HAVING
+        SUM(sale_qtty) > 10
+        AND SUM(after_prefr_amount_1) / NULLIF(SUM(sale_qtty), 0) BETWEEN 10 AND 10000
+) t
+LEFT JOIN (
+    SELECT item_sku_id, square_pic_path
+    FROM (
+        SELECT
+            item_sku_id,
+            square_pic_path,
+            ROW_NUMBER() OVER (PARTITION BY item_sku_id ORDER BY dt DESC) AS rn
+        FROM gdm.gdm_m03_item_sku_pic_da
+        WHERE square_pic_path IS NOT NULL
+          AND dt = SYSDATE(-1)
+    )
+    WHERE rn = 1
+) pic
+    ON t.item_sku_id = pic.item_sku_id
+】
+
+增加规则：当商品为pop，店铺星级需要>4.0
+商品的 data_type=1 为自营， data_type=3 为pop商品
+pop店铺星级
+select 
+    vender_id,
+    shop_id,
+    score_rank_rate_grade
+from 
+    app.app_eco_grade_business_benchmark_view_v2 --店铺星级
+where 
+    dt = ${hiveconf:dt_n}
+    and cast(score_rank_rate_grade as double) >4.0
+
+商品质量：商品好评率大于93%或0
+ (SELECT    
+        primary_key AS item_sku_id,
+        CAST(label_value[0] AS DECIMAL(10,4)) AS good_comment_rate
+    FROM 
+        app.v_label_hope_mart_mobile_231124_1_2
+    WHERE 
+        dt = sysdate(-1)
+        AND label_name = "l02_good_comment_rate_29528"
+        AND CAST(label_value[0] AS DECIMAL(10,4)) >= 0.93
+    ) g ON b.item_sku_id = g.item_sku_id
+
+
+需要获取的表字段-取商品信息
+item_sku_id,
+sku_name,
+data_type,
+item_first_cate_cd,
+item_first_cate_name, 
+item_second_cate_cd,
+item_second_cate_name,   
+item_third_cate_cd,
+item_third_cate_name,
+brand_code,
+brandname,
+good_comment_rate,商品好评率
+total_sale_num, 统计周期内成交商品数量
+total_amount, 统计周期内成交金额
+avg_price, 平均成交价格=统计周期内成交金额/ 统计周期内成交商品数量
+pic_url, 商品图片
