@@ -59,12 +59,16 @@ export function WordCard({ word, synonyms = [] }: WordCardProps) {
 
         {/* Example */}
         {word.example && (
-          <div>
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">
-              💬 Example
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-100 dark:border-amber-800">
+            <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-1">
+              <span>💬</span>
+              <span>例句</span>
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 italic">
+            <p className="text-gray-700 dark:text-gray-300 italic text-base leading-relaxed">
               &ldquo;{word.example}&rdquo;
+            </p>
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
+              例句帮助理解单词的实际用法
             </p>
           </div>
         )}

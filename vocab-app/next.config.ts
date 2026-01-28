@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
     return config;
   },
   turbopack: {},
+  // Docker 部署配置
+  output: 'standalone',
 };
 
 export default nextConfig;

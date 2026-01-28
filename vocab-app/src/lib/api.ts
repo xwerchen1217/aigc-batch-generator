@@ -43,16 +43,47 @@ export async function getWordWithTranslation(word: string) {
     return null;
   }
 
-  // Translate definition to Chinese
-  const definitionZh = await translateText(firstDefinition.definition);
+  // 启动翻译但不等待 - 异步加载
+  translateText(firstDefinition.definition).catch(() => {});
+
+  // 查找例句：先从第一个定义找，没有就从同词性的其他定义找，还没有就从其他词性找
+  let example = firstDefinition.example || '';
+
+  if (!example) {
+    // 在第一个词性的其他定义中查找
+    for (const def of firstMeaning.definitions || []) {
+      if (def.example) {
+        example = def.example;
+        break;
+      }
+    }
+  }
+
+  if (!example) {
+    // 在其他词性中查找
+    for (const meaning of dictData.meanings || []) {
+      for (const def of meaning.definitions || []) {
+        if (def.example) {
+          example = def.example;
+          break;
+        }
+      }
+      if (example) break;
+    }
+  }
 
   return {
     word: dictData.word,
     phonetic: dictData.phonetic || dictData.phonetics?.[0]?.text || '',
     partOfSpeech: firstMeaning.partOfSpeech,
     definitionEn: firstDefinition.definition,
-    definitionZh,
-    example: firstDefinition.example || '',
+    definitionZh: '加载中...', // 占位符
+    example,
     synonyms: firstMeaning.synonyms?.slice(0, 6) || [],
   };
+}
+
+// 单独的翻译函数，用于异步获取中文
+export async function getChineseTranslation(englishText: string): Promise<string> {
+  return await translateText(englishText);
 }

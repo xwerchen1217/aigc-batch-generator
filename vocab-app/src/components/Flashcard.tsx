@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { WordEntry } from '@/types';
 import { SpeakButton } from './SpeakButton';
+import { MasteryBadge } from './MasteryBadge';
 
 interface FlashcardProps {
   word: WordEntry;
@@ -55,6 +56,11 @@ export function Flashcard({ word, onRating, currentIndex, total }: FlashcardProp
             className="absolute w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-xl flex flex-col items-center justify-center text-white backface-hidden"
             style={{ backfaceVisibility: 'hidden' }}
           >
+            {/* Mastery Badge */}
+            <div className="absolute top-4">
+              <MasteryBadge interval={word.interval} reviewCount={word.reviewCount} showLabel={false} />
+            </div>
+
             <h2 className="text-4xl font-bold capitalize mb-4">{word.word}</h2>
             <p className="text-white/80 text-sm mb-4">{word.phonetic}</p>
             <SpeakButton word={word.word} size="lg" className="bg-white/20 hover:bg-white/30 text-white" />
@@ -85,9 +91,9 @@ export function Flashcard({ word, onRating, currentIndex, total }: FlashcardProp
                 <p className="text-gray-800 dark:text-gray-200">{word.definitionZh}</p>
               </div>
               {word.example && (
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400 mb-1">💬 Example</p>
-                  <p className="text-gray-600 dark:text-gray-300 italic text-xs">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                  <p className="text-gray-500 dark:text-gray-400 mb-1 text-xs">💬 例句</p>
+                  <p className="text-gray-700 dark:text-gray-300 italic text-sm leading-relaxed">
                     &ldquo;{word.example}&rdquo;
                   </p>
                 </div>
